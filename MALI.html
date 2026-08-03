@@ -62,8 +62,17 @@
 
     <!-- 控制面板 -->
     <div class="mt-8 flex flex-col items-center gap-4">
+        <!-- 籌碼下注區 -->
+        <div class="flex items-center gap-2 md:gap-4 bg-gray-800 p-2 md:p-3 rounded-2xl border border-gray-600 shadow-[0_5px_15px_rgba(0,0,0,0.5)] z-10">
+            <span class="text-yellow-400 font-bold text-lg md:text-xl">下注:</span>
+            <button onclick="changeBet(-100)" class="w-10 h-10 rounded-full bg-gray-700 text-white font-bold text-xl hover:bg-gray-600 active:scale-95 transition-all shadow-inner border border-gray-500 flex items-center justify-center">-</button>
+            <div id="current-bet-display" class="w-16 md:w-20 text-center font-black text-xl md:text-2xl text-white">100</div>
+            <button onclick="changeBet(100)" class="w-10 h-10 rounded-full bg-gray-700 text-white font-bold text-xl hover:bg-gray-600 active:scale-95 transition-all shadow-inner border border-gray-500 flex items-center justify-center">+</button>
+            <button onclick="setBetMax()" class="px-3 py-1.5 md:px-4 md:py-2 rounded-xl bg-gradient-to-b from-yellow-400 to-yellow-600 text-black font-black text-sm md:text-base hover:brightness-110 active:scale-95 transition-all shadow-md ml-2 border border-yellow-300">MAX</button>
+        </div>
+
         <button id="spin-btn" onclick="startSpin()" class="px-8 py-4 rounded-full font-black text-2xl tracking-widest text-white shadow-[0_10px_0_#7f1d1d,0_15px_20px_rgba(0,0,0,0.4)] transition-all bg-gradient-to-b from-red-500 to-red-700 active:shadow-[0_0px_0_#7f1d1d] active:translate-y-[10px] hover:brightness-110">
-            下單 (100點)
+            確認啟動 (100點)
         </button>
         <div id="bankrupt-msg" class="hidden mt-2 text-red-500 font-bold animate-bounce text-xl">
             破產啦！請重新整理網頁再戰。
@@ -83,21 +92,21 @@
             { id: 'item-7', name: '軋空行情', type: 'good', color: 'bg-pink-600', text: 'text-white' }, // 右1
             { id: 'item-8', name: '南亞科', type: 'stock', color: 'bg-blue-600', text: 'text-white' }, // 右2
             { id: 'item-9', name: '漲停', type: 'good', color: 'bg-red-600', text: 'text-yellow-300' }, // 右3
-            { id: 'item-10', name: '廣達', type: 'stock', color: 'bg-purple-600', text: 'text-white' }, // 右4
+            { id: 'item-10', name: '胖手指錯單', type: 'bad', color: 'bg-green-800', text: 'text-white' }, // 右4
             { id: 'item-11', name: '違約交割', type: 'bad', color: 'bg-gray-900', text: 'text-red-500' }, // 右5
             
             { id: 'item-12', name: '國巨', type: 'stock', color: 'bg-teal-600', text: 'text-white' }, // 下1 (右下往左)
             { id: 'item-13', name: '投信連買', type: 'good', color: 'bg-pink-400', text: 'text-black' }, // 下2
-            { id: 'item-14', name: '富邦金', type: 'stock', color: 'bg-cyan-600', text: 'text-white' }, // 下3
+            { id: 'item-14', name: '無量下跌', type: 'bad', color: 'bg-green-400', text: 'text-black' }, // 下3 
             { id: 'item-15', name: '融資斷頭', type: 'bad', color: 'bg-green-700', text: 'text-black' }, // 下4
             { id: 'item-16', name: '金爺降臨', type: 'jackpot', color: 'bg-yellow-300', text: 'text-red-600' }, // 下5
-            { id: 'item-17', name: '台達電', type: 'stock', color: 'bg-blue-500', text: 'text-white' }, // 下6
-            { id: 'item-18', name: '長榮', type: 'stock', color: 'bg-emerald-800', text: 'text-white' }, // 下7
+            { id: 'item-17', name: '法會大跌', type: 'bad', color: 'bg-emerald-900', text: 'text-white' }, // 下6
+            { id: 'item-18', name: '加入直雲大家族', type: 'super_bad', color: 'bg-purple-900', text: 'text-yellow-400' }, // 下7 (大魔王)
             
             { id: 'item-19', name: '漲停', type: 'good', color: 'bg-red-600', text: 'text-yellow-300' }, // 左1 (左下往上)
             { id: 'item-20', name: '尖點', type: 'stock', color: 'bg-indigo-500', text: 'text-white' }, // 左2
             { id: 'item-21', name: '量價背離', type: 'event', color: 'bg-gray-700', text: 'text-yellow-300' }, // 左3
-            { id: 'item-22', name: '華碩', type: 'stock', color: 'bg-red-800', text: 'text-white' }, // 左4
+            { id: 'item-22', name: '高檔倒貨', type: 'bad', color: 'bg-green-600', text: 'text-yellow-200' }, // 左4
             { id: 'item-23', name: '跌停', type: 'bad', color: 'bg-green-600', text: 'text-white' }  // 左5
         ];
 
@@ -111,6 +120,7 @@
 
         // 遊戲狀態變數
         let chips = 1000;
+        let currentBet = 100; // 新增下注額變數
         let isSpinning = false;
         let currentIndex = -1; // 尚未開始
         let stepsLeft = 0;
@@ -156,10 +166,10 @@
 
         // 開始旋轉
         function startSpin() {
-            if (isSpinning || chips < 100) return;
+            if (isSpinning || chips < currentBet) return; // 檢查是否有足夠下注額
 
             // 扣除籌碼
-            updateChips(-100);
+            updateChips(-currentBet);
             hideLastWin();
             
             isSpinning = true;
@@ -218,22 +228,23 @@
             let winAmount = 0;
             let message = '';
             const msgEl = document.getElementById('center-message');
+            const multiplier = currentBet / 100; // 計算倍率
             
-            // 根據類型決定賠率與訊息
+            // 根據類型決定賠率與訊息，獲利與虧損皆依據倍率放大
             switch (item.type) {
                 case 'jackpot':
-                    winAmount = 5000;
-                    message = `🎊 狂賀！\n【${item.name}】\n大賺 5000 點！`;
+                    winAmount = 5000 * multiplier;
+                    message = `🎊 狂賀！\n【${item.name}】\n大賺 ${winAmount} 點！`;
                     msgEl.className = 'text-2xl md:text-3xl font-black text-center z-10 transition-colors duration-300 text-yellow-300 drop-shadow-[0_0_8px_rgba(255,215,0,1)]';
                     break;
                 case 'good':
-                    winAmount = 500;
-                    message = `🚀 恭喜！\n【${item.name}】\n賺 500 點！`;
+                    winAmount = 500 * multiplier;
+                    message = `🚀 恭喜！\n【${item.name}】\n賺 ${winAmount} 點！`;
                     msgEl.className = 'text-xl md:text-3xl font-black text-center z-10 transition-colors duration-300 text-red-500';
                     break;
                 case 'stock':
-                    winAmount = 200;
-                    message = `📈 買進\n【${item.name}】\n賺 200 點！`;
+                    winAmount = 200 * multiplier;
+                    message = `📈 買進\n【${item.name}】\n賺 ${winAmount} 點！`;
                     msgEl.className = 'text-xl md:text-3xl font-black text-center z-10 transition-colors duration-300 text-red-400';
                     break;
                 case 'event':
@@ -242,9 +253,14 @@
                     msgEl.className = 'text-xl md:text-3xl font-black text-center z-10 transition-colors duration-300 text-white';
                     break;
                 case 'bad':
-                    winAmount = -300;
-                    message = `📉 慘了！\n【${item.name}】\n慘賠 300 點！`;
+                    winAmount = -300 * multiplier; // 扣點數也加倍
+                    message = `📉 慘了！\n【${item.name}】\n慘賠 ${Math.abs(winAmount)} 點！`;
                     msgEl.className = 'text-xl md:text-3xl font-black text-center z-10 transition-colors duration-300 text-green-500';
+                    break;
+                case 'super_bad':
+                    winAmount = -5000 * multiplier; // 直雲降臨，一次噴五千
+                    message = `💀 救命啊！\n【${item.name}】\n慘賠 ${Math.abs(winAmount)} 點！`;
+                    msgEl.className = 'text-2xl md:text-3xl font-black text-center z-10 transition-colors duration-300 text-red-600 animate-pulse drop-shadow-[0_0_10px_rgba(255,0,0,0.9)]';
                     break;
             }
 
@@ -255,17 +271,29 @@
             updateChips(winAmount);
             showLastWin(winAmount);
 
+            // 如果現有籌碼小於目前的下注額，自動降回最大可負擔百位數，避免卡住
+            if (chips > 0 && currentBet > chips) {
+                currentBet = Math.max(100, Math.floor(chips / 100) * 100);
+            }
+            updateBetDisplay();
+
             // 恢復按鈕狀態
             const btn = document.getElementById('spin-btn');
             btn.classList.remove('bg-gray-600', 'shadow-[0_5px_0_#4b5563]', 'translate-y-1', 'cursor-not-allowed');
             btn.classList.add('bg-gradient-to-b', 'from-red-500', 'to-red-700', 'active:shadow-[0_0px_0_#7f1d1d]', 'active:translate-y-[10px]', 'hover:brightness-110');
-            btn.innerText = '下單 (100點)';
 
             // 檢查破產
             if (chips < 100) {
                 document.getElementById('bankrupt-msg').classList.remove('hidden');
                 btn.classList.add('opacity-50', 'cursor-not-allowed');
                 btn.onclick = null; // 移除點擊事件
+                
+                // 同時停用所有下注按鈕
+                const betButtons = document.querySelectorAll('.flex.items-center.gap-2 button');
+                betButtons.forEach(b => {
+                    b.classList.add('opacity-50', 'cursor-not-allowed');
+                    b.onclick = null;
+                });
             }
         }
 
@@ -295,9 +323,34 @@
             document.getElementById('last-win-display').classList.add('hidden');
         }
 
+        // --- 下注額控制 ---
+        function changeBet(amount) {
+            if (isSpinning || chips < 100) return;
+            const newBet = currentBet + amount;
+            if (newBet >= 100 && newBet <= chips) {
+                currentBet = newBet;
+                updateBetDisplay();
+            }
+        }
+
+        // All in 控制
+        function setBetMax() {
+            if (isSpinning || chips < 100) return;
+            // 向下取整百位數，確保是 100 的倍數
+            currentBet = Math.floor(chips / 100) * 100;
+            updateBetDisplay();
+        }
+
+        // 更新下注顯示
+        function updateBetDisplay() {
+            document.getElementById('current-bet-display').innerText = currentBet;
+            document.getElementById('spin-btn').innerText = `確認啟動 (${currentBet}點)`;
+        }
+
         // 網頁載入後初始化遊戲版面
         window.onload = () => {
             initBoard();
+            updateBetDisplay();
         };
 
     </script>
