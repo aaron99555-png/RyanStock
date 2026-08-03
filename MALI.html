@@ -6,6 +6,8 @@
     <title>飆股小瑪莉</title>
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Tone.js 用於生成復古機台音效 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         /* 增加一些自定義動畫與效果 */
         @keyframes pulse-fast {
@@ -142,6 +144,39 @@
         let speed = 50;
         let timer = null;
 
+        // Tone.js 音效變數
+        let audioInitialized = false;
+        let spinSynth, winSynth, loseSynth;
+
+        async function initAudio() {
+            if (audioInitialized) return;
+            // 瀏覽器規定必須透過使用者互動才能啟動 AudioContext
+            await Tone.start();
+            
+            // 全域音量調大 (增加 10 分貝，確保符合大聲的需求)
+            Tone.Destination.volume.value = 10; 
+
+            // 跑馬燈跳動的音效 (短促的高音方形波)
+            spinSynth = new Tone.Synth({
+                oscillator: { type: 'square' },
+                envelope: { attack: 0.01, decay: 0.05, sustain: 0, release: 0.01 }
+            }).toDestination();
+            
+            // 贏錢的音效 (明亮的三角波和弦)
+            winSynth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'triangle' },
+                envelope: { attack: 0.05, decay: 0.2, sustain: 0.2, release: 1 }
+            }).toDestination();
+
+            // 賠錢的音效 (低沉的鋸齒波和弦)
+            loseSynth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: 'sawtooth' },
+                envelope: { attack: 0.1, decay: 0.2, sustain: 0.2, release: 1 }
+            }).toDestination();
+
+            audioInitialized = true;
+        }
+
         // 初始化棋盤
         function initBoard() {
             const board = document.getElementById('game-board');
@@ -184,6 +219,8 @@
         }
 
         function startSpin() {
+            initAudio(); // 確保使用者點擊時啟用音訊引擎
+            
             if (isSpinning || chips < currentBet) return; 
 
             updateChips(-currentBet);
@@ -222,6 +259,11 @@
             currentIndex = (currentIndex + 1) % GAME_ITEMS.length;
             highlightCell(currentIndex);
             
+            if (audioInitialized) {
+                // 跑燈音效：每次移動發出短促的電子嘟聲
+                spinSynth.triggerAttackRelease("C6", "64n");
+            }
+            
             stepsLeft--;
 
             if (stepsLeft < 10) {
@@ -240,6 +282,7 @@
             let message = '';
             const msgEl = document.getElementById('center-message');
             const multiplier = currentBet / 100;
+            const now = Tone.now(); // 取得當前時間點，用於音效節奏排程
             
             switch (item.type) {
                 case 'zhezhe':
@@ -248,36 +291,57 @@
                     winAmount = -Math.ceil(chips / 2);
                     message = `😎 相信哲哲！\n【財富對折】\n慘賠 ${Math.abs(winAmount)}`;
                     msgEl.className = 'responsive-text-md font-black text-center z-10 transition-colors duration-300 text-cyan-400 drop-shadow-md';
+                    if (audioInitialized) {
+                        loseSynth.triggerAttackRelease(["C3", "Eb3", "Gb3"], "2n", now);
+                        loseSynth.triggerAttackRelease(["A2", "C3", "Eb3"], "1n", now + 0.5);
+                    }
                     break;
                 case 'jackpot':
                     winAmount = 5000 * multiplier;
                     message = `🎊 狂賀！\n【${item.name}】\n大賺 ${winAmount}`;
                     msgEl.className = 'responsive-text-lg font-black text-center z-10 transition-colors duration-300 text-yellow-300 drop-shadow-[0_0_8px_rgba(255,215,0,1)]';
+                    if (audioInitialized) {
+                        winSynth.triggerAttackRelease(["C4", "E4", "G4"], "8n", now);
+                        winSynth.triggerAttackRelease(["E4", "G4", "C5"], "8n", now + 0.15);
+                        winSynth.triggerAttackRelease(["G4", "C5", "E5"], "8n", now + 0.3);
+                        winSynth.triggerAttackRelease(["C5", "E5", "G5", "C6"], "2n", now + 0.45);
+                    }
                     break;
                 case 'good':
                     winAmount = 500 * multiplier;
                     message = `🚀 恭喜！\n【${item.name}】\n賺 ${winAmount}`;
                     msgEl.className = 'responsive-text-md font-black text-center z-10 transition-colors duration-300 text-red-500';
+                    if (audioInitialized) {
+                        winSynth.triggerAttackRelease(["C4", "E4", "G4"], "8n", now);
+                        winSynth.triggerAttackRelease(["C5", "E5", "G5"], "4n", now + 0.2);
+                    }
                     break;
                 case 'stock':
                     winAmount = 200 * multiplier;
                     message = `📈 買進\n【${item.name}】\n賺 ${winAmount}`;
                     msgEl.className = 'responsive-text-md font-black text-center z-10 transition-colors duration-300 text-red-400';
-                    break;
-                case 'event':
-                    winAmount = currentBet; 
-                    message = `⚠️ 注意！\n【${item.name}】\n不賺不賠\n(退還本金)`;
-                    msgEl.className = 'responsive-text-md font-black text-center z-10 transition-colors duration-300 text-white';
+                    if (audioInitialized) {
+                        winSynth.triggerAttackRelease(["C4", "E4"], "8n", now);
+                        winSynth.triggerAttackRelease(["E4", "G4"], "4n", now + 0.15);
+                    }
                     break;
                 case 'bad':
                     winAmount = -300 * multiplier; 
                     message = `📉 慘了！\n【${item.name}】\n慘賠 ${Math.abs(winAmount)}`;
                     msgEl.className = 'responsive-text-md font-black text-center z-10 transition-colors duration-300 text-green-500';
+                    if (audioInitialized) {
+                        loseSynth.triggerAttackRelease(["E3", "G3"], "8n", now);
+                        loseSynth.triggerAttackRelease(["C3", "Eb3"], "4n", now + 0.2);
+                    }
                     break;
                 case 'super_bad':
                     winAmount = -5000 * multiplier; 
                     message = `💀 救命啊！\n【${item.name}】\n慘賠 ${Math.abs(winAmount)}`;
                     msgEl.className = 'responsive-text-md font-black text-center z-10 transition-colors duration-300 text-red-600 animate-pulse drop-shadow-[0_0_10px_rgba(255,0,0,0.9)]';
+                    if (audioInitialized) {
+                        loseSynth.triggerAttackRelease(["C3", "Eb3", "Gb3"], "4n", now);
+                        loseSynth.triggerAttackRelease(["Gb2", "A2", "C3"], "1n", now + 0.3);
+                    }
                     break;
             }
 
@@ -332,6 +396,8 @@
         }
 
         function changeBet(amount) {
+            initAudio(); // 確保使用者互動時啟用音訊引擎
+
             if (isSpinning || chips < 100) return;
             const newBet = currentBet + amount;
             if (newBet >= 100 && newBet <= chips) {
@@ -341,6 +407,8 @@
         }
 
         function setBetMax() {
+            initAudio(); // 確保使用者互動時啟用音訊引擎
+
             if (isSpinning || chips < 100) return;
             currentBet = Math.floor(chips / 100) * 100;
             updateBetDisplay();
