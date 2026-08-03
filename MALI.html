@@ -4,428 +4,100 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>飆股小瑪莉</title>
-    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 Tone.js 用於生成復古機台音效 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
-        /* 增加一些自定義動畫與效果 */
-        @keyframes pulse-fast {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.05); }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: repeat(7, 1fr);
+            gap: 4px;
         }
-        .animate-pulse-fast {
-            animation: pulse-fast 0.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        /* 移除按鈕的反白選取 */
-        button {
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: manipulation; /* 增進觸控按鈕靈敏度 */
-        }
-        
-        /* 使用 clamp 來做響應式字體 */
-        .responsive-title {
-            font-size: clamp(1.5rem, 5vw, 3.5rem);
-        }
-        .responsive-text-sm {
-            font-size: clamp(0.5rem, 2vw, 0.9rem);
-        }
-        .responsive-text-md {
-            font-size: clamp(0.7rem, 2.5vw, 1.25rem);
-        }
-        .responsive-text-lg {
-            font-size: clamp(1rem, 3.5vw, 1.8rem);
-        }
-
-        /* 確保方塊始終為正方形 (或接近正方形) */
-        .grid-item-aspect {
-            aspect-ratio: 1 / 1;
-        }
+        /* 定義每個位置的名稱，確保絕對不會跑版 */
+        .pos-0 { grid-area: 1 / 1; } .pos-1 { grid-area: 1 / 2; } .pos-2 { grid-area: 1 / 3; }
+        .pos-3 { grid-area: 1 / 4; } .pos-4 { grid-area: 1 / 5; } .pos-5 { grid-area: 1 / 6; }
+        .pos-6 { grid-area: 1 / 7; } .pos-7 { grid-area: 2 / 7; } .pos-8 { grid-area: 3 / 7; }
+        .pos-9 { grid-area: 4 / 7; } .pos-10 { grid-area: 5 / 7; } .pos-11 { grid-area: 6 / 7; }
+        .pos-12 { grid-area: 7 / 7; } .pos-13 { grid-area: 7 / 6; } .pos-14 { grid-area: 7 / 5; }
+        .pos-15 { grid-area: 7 / 4; } .pos-16 { grid-area: 7 / 3; } .pos-17 { grid-area: 7 / 2; }
+        .pos-18 { grid-area: 7 / 1; } .pos-19 { grid-area: 6 / 1; } .pos-20 { grid-area: 5 / 1; }
+        .pos-21 { grid-area: 4 / 1; } .pos-22 { grid-area: 3 / 1; } .pos-23 { grid-area: 2 / 1; }
     </style>
 </head>
-<body class="h-[100dvh] w-full bg-gray-900 flex flex-col items-center justify-between p-2 sm:p-4 font-sans text-white overflow-hidden m-0">
+<body class="h-[100dvh] w-full bg-gray-900 flex flex-col items-center justify-between p-2 font-sans text-white overflow-hidden m-0">
 
-    <!-- 頂部標題與籌碼區 (使用 Flex 收縮，避免佔用太多空間) -->
-    <div class="flex-shrink-0 w-full max-w-2xl flex flex-col items-center justify-center pt-2">
-        <h1 class="responsive-title font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-red-600 filter drop-shadow-[0_0_8px_rgba(255,0,0,0.8)] tracking-widest mb-1 sm:mb-2" style="-webkit-text-stroke: 1px #4a0000;">
-            飆股小瑪莉
-        </h1>
-        <div class="flex gap-2 sm:gap-4 justify-center items-center responsive-text-md font-bold bg-gray-800 px-3 py-1 sm:p-2 rounded-lg border border-gray-700 shadow-inner">
-            <div class="text-yellow-400">資本額: <span id="chips-display" class="responsive-text-lg">$1000</span></div>
-            <div id="last-win-display" class="hidden text-green-500 whitespace-nowrap">
-                <!-- 將透過 JS 填入贏錢或輸錢的數字 -->
+    <div class="flex-shrink-0 w-full text-center pt-2">
+        <h1 class="text-3xl sm:text-5xl font-black text-yellow-400 drop-shadow-[0_0_10px_rgba(255,0,0,0.8)] tracking-widest">飆股小瑪莉</h1>
+        <div class="text-lg font-bold text-yellow-200">資本: <span id="chips-display">$5000</span></div>
+    </div>
+
+    <div class="flex-1 w-full max-w-lg flex items-center justify-center p-2">
+        <div id="game-board" class="grid-container w-full aspect-square bg-gray-800 p-2 rounded-2xl border-4 border-gray-700 shadow-2xl relative">
+            <div class="col-start-2 col-end-7 row-start-2 row-end-7 bg-black flex items-center justify-center rounded-lg border-2 border-gray-600">
+                <h2 id="center-message" class="text-xl font-bold text-center text-white">請下單！</h2>
             </div>
         </div>
     </div>
 
-    <!-- 遊戲機台主體 (自適應剩餘空間) -->
-    <div class="flex-1 w-full max-w-2xl flex items-center justify-center min-h-0 my-2 sm:my-4">
-        <!-- 保持機台最大寬高限制，並維持 1:1 的長寬比 -->
-        <div class="relative bg-gray-800 p-2 sm:p-4 rounded-xl sm:rounded-3xl border-4 sm:border-8 border-gray-700 shadow-[0_10px_30px_rgba(0,0,0,0.8)] w-full aspect-square max-h-full">
-            
-            <!-- 內圈發光裝飾 -->
-            <div class="absolute inset-1 sm:inset-2 border border-gray-600 rounded-lg sm:rounded-2xl pointer-events-none z-0"></div>
-            
-            <!-- 小瑪莉網格佈局 (7x7 網格，滿版) -->
-            <div id="game-board" class="grid grid-cols-7 grid-rows-7 gap-0.5 sm:gap-1.5 w-full h-full relative z-10">
-                
-                <!-- 中間顯示螢幕 (佔據中間的 5x5 區域) -->
-                <div class="col-start-2 col-end-7 row-start-2 row-end-7 bg-black rounded-lg border-2 sm:border-4 border-gray-600 p-2 flex flex-col items-center justify-center shadow-inner relative overflow-hidden h-full">
-                    <!-- 螢幕掃描線特效 (CRT Effect) -->
-                    <div class="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] pointer-events-none"></div>
-                    
-                    <h2 id="center-message" class="responsive-text-lg font-black text-center z-10 transition-colors duration-300 text-white drop-shadow-md px-2">
-                        請下單！
-                    </h2>
-                </div>
-                
-                <!-- JavaScript 將會在這裡動態產生周圍的 24 個方塊 -->
-            </div>
+    <div class="flex-shrink-0 w-full pb-4 flex flex-col items-center gap-3">
+        <div class="flex items-center gap-4 bg-gray-800 p-3 rounded-xl border border-gray-600">
+            <button onclick="changeBet(-100)" class="px-4 py-2 bg-gray-700 rounded">-</button>
+            <div id="current-bet-display" class="w-20 text-center font-black">100</div>
+            <button onclick="changeBet(100)" class="px-4 py-2 bg-gray-700 rounded">+</button>
         </div>
-    </div>
-
-    <!-- 控制面板 (固定在下方) -->
-    <div class="flex-shrink-0 w-full max-w-2xl flex flex-col items-center gap-2 sm:gap-4 pb-2 sm:pb-4">
-        <!-- 籌碼下注區 -->
-        <div class="flex items-center gap-1 sm:gap-3 bg-gray-800 px-2 py-1.5 sm:p-3 rounded-xl sm:rounded-2xl border border-gray-600 shadow-[0_5px_15px_rgba(0,0,0,0.5)] z-10">
-            <span class="text-yellow-400 font-bold responsive-text-md hidden xs:inline-block">下注:</span>
-            <button onclick="changeBet(-100)" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-700 text-white font-bold text-lg hover:bg-gray-600 active:scale-95 transition-all shadow-inner border border-gray-500 flex items-center justify-center">-</button>
-            <div id="current-bet-display" class="w-12 sm:w-16 text-center font-black responsive-text-lg text-white">100</div>
-            <button onclick="changeBet(100)" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-700 text-white font-bold text-lg hover:bg-gray-600 active:scale-95 transition-all shadow-inner border border-gray-500 flex items-center justify-center">+</button>
-            <button onclick="setBetMax()" class="px-2 py-1 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl bg-gradient-to-b from-yellow-400 to-yellow-600 text-black font-black responsive-text-sm hover:brightness-110 active:scale-95 transition-all shadow-md ml-1 sm:ml-2 border border-yellow-300">MAX</button>
-        </div>
-
-        <button id="spin-btn" onclick="startSpin()" class="px-6 py-2.5 sm:px-8 sm:py-4 w-11/12 max-w-[300px] rounded-full font-black responsive-text-lg tracking-wider sm:tracking-widest text-white shadow-[0_6px_0_#7f1d1d,0_10px_15px_rgba(0,0,0,0.4)] sm:shadow-[0_10px_0_#7f1d1d,0_15px_20px_rgba(0,0,0,0.4)] transition-all bg-gradient-to-b from-red-500 to-red-700 active:shadow-[0_0px_0_#7f1d1d] active:translate-y-[6px] sm:active:translate-y-[10px] hover:brightness-110 flex flex-col items-center justify-center leading-none whitespace-nowrap">
-            <span class="mb-1">確認啟動</span>
-            <span id="btn-bet-display" class="text-xs sm:text-sm font-bold text-red-200">(-100點)</span>
-        </button>
-        <div id="bankrupt-msg" class="hidden text-red-500 font-bold animate-bounce responsive-text-md text-center">
-            破產啦！請重新整理網頁再戰。
-        </div>
+        <button id="spin-btn" onclick="startSpin()" class="px-10 py-4 bg-red-600 rounded-full font-black text-xl shadow-lg hover:bg-red-500">確認啟動</button>
     </div>
 
     <script>
         const GAME_ITEMS = [
-            { id: 'item-0', name: 'TSMC', type: 'stock', color: 'bg-red-600', text: 'text-white' }, // 上1
-            { id: 'item-1', name: '跌停', type: 'bad', color: 'bg-green-600', text: 'text-white' }, // 上2
-            { id: 'item-2', name: '鴻海', type: 'stock', color: 'bg-blue-700', text: 'text-white' }, // 上3
-            { id: 'item-3', name: '跳空鎖死', type: 'good', color: 'bg-red-500', text: 'text-yellow-300' }, // 上4 (改為賺錢)
-            { id: 'item-4', name: '聯發科', type: 'stock', color: 'bg-red-500', text: 'text-white' }, // 上5
-            { id: 'item-5', name: '外資倒貨', type: 'bad', color: 'bg-green-500', text: 'text-black' }, // 上6
-            { id: 'item-6', name: '相信哲哲財富對折', type: 'zhezhe', color: 'bg-cyan-600', text: 'text-white' }, // 上7 (原為長榮)
-            
-            { id: 'item-7', name: '軋空行情', type: 'good', color: 'bg-pink-600', text: 'text-white' }, // 右1
-            { id: 'item-8', name: '南亞科', type: 'stock', color: 'bg-blue-600', text: 'text-white' }, // 右2
-            { id: 'item-9', name: '漲停', type: 'good', color: 'bg-red-600', text: 'text-yellow-300' }, // 右3
-            { id: 'item-10', name: '胖手指錯單', type: 'bad', color: 'bg-green-800', text: 'text-white' }, // 右4
-            { id: 'item-11', name: '違約交割', type: 'bad', color: 'bg-gray-900', text: 'text-red-500' }, // 右5
-            
-            { id: 'item-12', name: '國巨', type: 'stock', color: 'bg-teal-600', text: 'text-white' }, // 下1 (右下往左)
-            { id: 'item-13', name: '投信連買', type: 'good', color: 'bg-pink-400', text: 'text-black' }, // 下2
-            { id: 'item-14', name: '無量下跌', type: 'bad', color: 'bg-green-400', text: 'text-black' }, // 下3 
-            { id: 'item-15', name: '融資斷頭', type: 'bad', color: 'bg-green-700', text: 'text-black' }, // 下4
-            { id: 'item-16', name: '金爺降臨', type: 'jackpot', color: 'bg-yellow-300', text: 'text-red-600' }, // 下5
-            { id: 'item-17', name: '法會大跌', type: 'bad', color: 'bg-emerald-900', text: 'text-white' }, // 下6
-            { id: 'item-18', name: '加入直雲大家族', type: 'super_bad', color: 'bg-purple-900', text: 'text-yellow-400' }, // 下7 (大魔王)
-            
-            { id: 'item-19', name: '漲停', type: 'good', color: 'bg-red-600', text: 'text-yellow-300' }, // 左1 (左下往上)
-            { id: 'item-20', name: '尖點', type: 'stock', color: 'bg-indigo-500', text: 'text-white' }, // 左2
-            { id: 'item-21', name: '量價背離', type: 'bad', color: 'bg-green-700', text: 'text-yellow-300' }, // 左3 (改為賠錢)
-            { id: 'item-22', name: '高檔倒貨', type: 'bad', color: 'bg-green-600', text: 'text-yellow-200' }, // 左4
-            { id: 'item-23', name: '跌停', type: 'bad', color: 'bg-green-600', text: 'text-white' }  // 左5
+            { id: 0, name: 'TSMC', type: 'stock', color: 'bg-red-600' }, { id: 1, name: '跌停', type: 'bad', color: 'bg-green-600' },
+            { id: 2, name: '鴻海', type: 'stock', color: 'bg-blue-700' }, { id: 3, name: '跳空鎖死', type: 'good', color: 'bg-red-500' },
+            { id: 4, name: '聯發科', type: 'stock', color: 'bg-red-500' }, { id: 5, name: '外資倒貨', type: 'bad', color: 'bg-green-500' },
+            { id: 6, name: '財富對折', type: 'zhezhe', color: 'bg-cyan-600' }, { id: 7, name: '軋空', type: 'good', color: 'bg-pink-600' },
+            { id: 8, name: '南亞科', type: 'stock', color: 'bg-blue-600' }, { id: 9, name: '漲停', type: 'good', color: 'bg-red-600' },
+            { id: 10, name: '胖手指', type: 'bad', color: 'bg-green-800' }, { id: 11, name: '違約交割', type: 'bad', color: 'bg-gray-900' },
+            { id: 12, name: '國巨', type: 'stock', color: 'bg-teal-600' }, { id: 13, name: '投信連買', type: 'good', color: 'bg-pink-400' },
+            { id: 14, name: '無量下跌', type: 'bad', color: 'bg-green-400' }, { id: 15, name: '融資斷頭', type: 'bad', color: 'bg-green-700' },
+            { id: 16, name: '金爺降臨', type: 'jackpot', color: 'bg-yellow-300' }, { id: 17, name: '法會大跌', type: 'bad', color: 'bg-emerald-900' },
+            { id: 18, name: '直雲家族', type: 'super_bad', color: 'bg-purple-900' }, { id: 19, name: '漲停', type: 'good', color: 'bg-red-600' },
+            { id: 20, name: '尖點', type: 'stock', color: 'bg-indigo-500' }, { id: 21, name: '量價背離', type: 'bad', color: 'bg-green-700' },
+            { id: 22, name: '高檔倒貨', type: 'bad', color: 'bg-green-600' }, { id: 23, name: '跌停', type: 'bad', color: 'bg-green-600' }
         ];
 
-        let chips = 5000;
-        let currentBet = 100;
-        let isSpinning = false;
-        let currentIndex = -1;
-        let stepsLeft = 0;
-        let speed = 50;
-        let timer = null;
+        let chips = 5000, currentBet = 100, isSpinning = false, currentIndex = 0;
 
-        // Tone.js 音效變數
-        let audioInitialized = false;
-        let spinSynth, winSynth, loseSynth;
-
-        async function initAudio() {
-            if (audioInitialized) return;
-            // 瀏覽器規定必須透過使用者互動才能啟動 AudioContext
-            await Tone.start();
-            
-            // 全域音量調大 (增加 10 分貝，確保符合大聲的需求)
-            Tone.Destination.volume.value = 10; 
-
-            // 跑馬燈跳動的音效 (短促的高音方形波)
-            spinSynth = new Tone.Synth({
-                oscillator: { type: 'square' },
-                envelope: { attack: 0.01, decay: 0.05, sustain: 0, release: 0.01 }
-            }).toDestination();
-            
-            // 贏錢的音效 (明亮的三角波和弦)
-            winSynth = new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: 'triangle' },
-                envelope: { attack: 0.05, decay: 0.2, sustain: 0.2, release: 1 }
-            }).toDestination();
-
-            // 賠錢的音效 (低沉的鋸齒波和弦)
-            loseSynth = new Tone.PolySynth(Tone.Synth, {
-                oscillator: { type: 'sawtooth' },
-                envelope: { attack: 0.1, decay: 0.2, sustain: 0.2, release: 1 }
-            }).toDestination();
-
-            audioInitialized = true;
-        }
-
-        // 初始化棋盤
         function initBoard() {
             const board = document.getElementById('game-board');
-            
-            GAME_ITEMS.forEach((item, index) => {
+            GAME_ITEMS.forEach((item, i) => {
                 const el = document.createElement('div');
-                el.id = item.id;
-                
-                // 套用響應式類別，使用 flex-col 讓長字串可以換行
-                el.className = `grid-item-aspect flex flex-col items-center justify-center text-center font-bold responsive-text-sm rounded-sm sm:rounded-md shadow-[inset_0_-2px_0_rgba(0,0,0,0.5)] border border-gray-900 transition-all duration-75 brightness-75 opacity-80 ${item.color} ${item.text} ${gridPositions[index]} overflow-hidden`;
-                
-                // 將字串拆分換行，讓窄螢幕(手機)上更好看
-                let formattedName = item.name;
-                if (item.name === '加入直雲大家族') {
-                     formattedName = '直雲<br>大家族';
-                } else if (item.name === '相信哲哲財富對折') {
-                     formattedName = '財富<br>對折';
-                } else if (item.name.length >= 4) {
-                     formattedName = item.name.substring(0,2) + '<br>' + item.name.substring(2);
-                }
-
-                el.innerHTML = `<div class="leading-[1.1] sm:leading-tight px-0.5" style="text-shadow: 1px 1px 2px black;">${formattedName}</div>`;
+                el.id = 'item-' + i;
+                el.className = `pos-${i} ${item.color} flex items-center justify-center text-xs font-bold rounded shadow-inner border border-black`;
+                el.innerHTML = item.name;
                 board.appendChild(el);
             });
-            
-            currentIndex = 0;
-            highlightCell(currentIndex);
-        }
-
-        function highlightCell(index) {
-            GAME_ITEMS.forEach(item => {
-                const el = document.getElementById(item.id);
-                el.classList.remove('scale-110', 'ring-2', 'sm:ring-4', 'ring-yellow-400', 'z-20', 'brightness-150', 'drop-shadow-[0_0_10px_rgba(255,255,0,0.8)]');
-                el.classList.add('brightness-75', 'opacity-80');
-            });
-
-            const targetEl = document.getElementById(GAME_ITEMS[index].id);
-            targetEl.classList.remove('brightness-75', 'opacity-80');
-            targetEl.classList.add('scale-110', 'ring-2', 'sm:ring-4', 'ring-yellow-400', 'z-20', 'brightness-150', 'drop-shadow-[0_0_10px_rgba(255,255,0,0.8)]');
         }
 
         function startSpin() {
-            initAudio(); // 確保使用者點擊時啟用音訊引擎
-            
-            if (isSpinning || chips < currentBet) return; 
-
-            updateChips(-currentBet);
-            hideLastWin();
-            
+            if(isSpinning) return;
             isSpinning = true;
-            
-            const msgEl = document.getElementById('center-message');
-            msgEl.innerHTML = '交易中...';
-            msgEl.className = 'responsive-text-lg font-black text-center z-10 transition-colors duration-300 text-yellow-400 animate-pulse-fast drop-shadow-md';
-            
-            const btn = document.getElementById('spin-btn');
-            btn.classList.add('bg-gray-600', 'shadow-[0_4px_0_#4b5563]', 'translate-y-1', 'cursor-not-allowed');
-            btn.classList.remove('bg-gradient-to-b', 'from-red-500', 'to-red-700', 'active:shadow-[0_0px_0_#7f1d1d]', 'active:translate-y-[6px]', 'sm:active:translate-y-[10px]', 'hover:brightness-110');
-            
-            btn.querySelector('span:first-child').innerText = '交易中...';
-            btn.querySelector('#btn-bet-display').innerText = '';
-
-            const minSteps = GAME_ITEMS.length * 3;
-            const randomStop = Math.floor(Math.random() * GAME_ITEMS.length);
-            stepsLeft = minSteps + randomStop;
-            
-            speed = 30;
-            
-            if(timer) clearTimeout(timer);
-            runAnimation();
+            let steps = 50 + Math.floor(Math.random() * 24);
+            let speed = 50;
+            function move() {
+                document.querySelectorAll('.grid-container > div').forEach(el => el.classList.remove('ring-4', 'ring-yellow-300'));
+                document.getElementById('item-' + (currentIndex % 24)).classList.add('ring-4', 'ring-yellow-300');
+                currentIndex++;
+                if(--steps > 0) setTimeout(move, speed += 2);
+                else isSpinning = false;
+            }
+            move();
         }
 
-        function runAnimation() {
-            if (stepsLeft <= 0) {
-                isSpinning = false;
-                handleResult(GAME_ITEMS[currentIndex]);
-                return;
-            }
-
-            currentIndex = (currentIndex + 1) % GAME_ITEMS.length;
-            highlightCell(currentIndex);
-            
-            if (audioInitialized) {
-                // 跑燈音效：每次移動發出短促的電子嘟聲
-                spinSynth.triggerAttackRelease("C6", "64n");
-            }
-            
-            stepsLeft--;
-
-            if (stepsLeft < 10) {
-                speed += 40; 
-            } else if (stepsLeft < 20) {
-                speed += 20;
-            } else if (stepsLeft < 35) {
-                speed += 5;
-            }
-
-            timer = setTimeout(runAnimation, speed);
-        }
-
-        function handleResult(item) {
-            let winAmount = 0;
-            let message = '';
-            const msgEl = document.getElementById('center-message');
-            const multiplier = currentBet / 100;
-            const now = Tone.now(); // 取得當前時間點，用於音效節奏排程
-            
-            switch (item.type) {
-                case 'zhezhe':
-                    // 扣除目前剩餘籌碼的一半 (因為已經先扣了下注額，所以是從扣除下注額後的餘額來對折)
-                    // 使用 Math.ceil 確保如果剩單數，扣除的數字是整數
-                    winAmount = -Math.ceil(chips / 2);
-                    message = `😎 相信哲哲！\n【財富對折】\n慘賠 ${Math.abs(winAmount)}`;
-                    msgEl.className = 'responsive-text-md font-black text-center z-10 transition-colors duration-300 text-cyan-400 drop-shadow-md';
-                    if (audioInitialized) {
-                        loseSynth.triggerAttackRelease(["C3", "Eb3", "Gb3"], "2n", now);
-                        loseSynth.triggerAttackRelease(["A2", "C3", "Eb3"], "1n", now + 0.5);
-                    }
-                    break;
-                case 'jackpot':
-                    winAmount = 5000 * multiplier;
-                    message = `🎊 狂賀！\n【${item.name}】\n大賺 ${winAmount}`;
-                    msgEl.className = 'responsive-text-lg font-black text-center z-10 transition-colors duration-300 text-yellow-300 drop-shadow-[0_0_8px_rgba(255,215,0,1)]';
-                    if (audioInitialized) {
-                        winSynth.triggerAttackRelease(["C4", "E4", "G4"], "8n", now);
-                        winSynth.triggerAttackRelease(["E4", "G4", "C5"], "8n", now + 0.15);
-                        winSynth.triggerAttackRelease(["G4", "C5", "E5"], "8n", now + 0.3);
-                        winSynth.triggerAttackRelease(["C5", "E5", "G5", "C6"], "2n", now + 0.45);
-                    }
-                    break;
-                case 'good':
-                    winAmount = 500 * multiplier;
-                    message = `🚀 恭喜！\n【${item.name}】\n賺 ${winAmount}`;
-                    msgEl.className = 'responsive-text-md font-black text-center z-10 transition-colors duration-300 text-red-500';
-                    if (audioInitialized) {
-                        winSynth.triggerAttackRelease(["C4", "E4", "G4"], "8n", now);
-                        winSynth.triggerAttackRelease(["C5", "E5", "G5"], "4n", now + 0.2);
-                    }
-                    break;
-                case 'stock':
-                    winAmount = 200 * multiplier;
-                    message = `📈 買進\n【${item.name}】\n賺 ${winAmount}`;
-                    msgEl.className = 'responsive-text-md font-black text-center z-10 transition-colors duration-300 text-red-400';
-                    if (audioInitialized) {
-                        winSynth.triggerAttackRelease(["C4", "E4"], "8n", now);
-                        winSynth.triggerAttackRelease(["E4", "G4"], "4n", now + 0.15);
-                    }
-                    break;
-                case 'bad':
-                    winAmount = -300 * multiplier; 
-                    message = `📉 慘了！\n【${item.name}】\n慘賠 ${Math.abs(winAmount)}`;
-                    msgEl.className = 'responsive-text-md font-black text-center z-10 transition-colors duration-300 text-green-500';
-                    if (audioInitialized) {
-                        loseSynth.triggerAttackRelease(["E3", "G3"], "8n", now);
-                        loseSynth.triggerAttackRelease(["C3", "Eb3"], "4n", now + 0.2);
-                    }
-                    break;
-                case 'super_bad':
-                    winAmount = -5000 * multiplier; 
-                    message = `💀 救命啊！\n【${item.name}】\n慘賠 ${Math.abs(winAmount)}`;
-                    msgEl.className = 'responsive-text-md font-black text-center z-10 transition-colors duration-300 text-red-600 animate-pulse drop-shadow-[0_0_10px_rgba(255,0,0,0.9)]';
-                    if (audioInitialized) {
-                        loseSynth.triggerAttackRelease(["C3", "Eb3", "Gb3"], "4n", now);
-                        loseSynth.triggerAttackRelease(["Gb2", "A2", "C3"], "1n", now + 0.3);
-                    }
-                    break;
-            }
-
-            msgEl.innerHTML = message.replace(/\n/g, '<br>');
-            
-            updateChips(winAmount);
-            showLastWin(winAmount);
-
-            if (chips > 0 && currentBet > chips) {
-                currentBet = Math.max(100, Math.floor(chips / 100) * 100);
-            }
-            updateBetDisplay();
-
-            const btn = document.getElementById('spin-btn');
-            btn.classList.remove('bg-gray-600', 'shadow-[0_4px_0_#4b5563]', 'translate-y-1', 'cursor-not-allowed');
-            btn.classList.add('bg-gradient-to-b', 'from-red-500', 'to-red-700', 'active:shadow-[0_0px_0_#7f1d1d]', 'active:translate-y-[6px]', 'sm:active:translate-y-[10px]', 'hover:brightness-110');
-
-            if (chips < 100) {
-                document.getElementById('bankrupt-msg').classList.remove('hidden');
-                btn.classList.add('opacity-50', 'cursor-not-allowed');
-                btn.onclick = null; 
-                
-                const betButtons = document.querySelectorAll('.flex.items-center.gap-1 button, .flex.items-center.gap-3 button');
-                betButtons.forEach(b => {
-                    b.classList.add('opacity-50', 'cursor-not-allowed');
-                    b.onclick = null;
-                });
-            }
-        }
-
-        function updateChips(amount) {
-            chips += amount;
-            document.getElementById('chips-display').innerText = `$${chips}`;
-        }
-
-        function showLastWin(amount) {
-            const el = document.getElementById('last-win-display');
-            if (amount === 0) return;
-            
-            el.classList.remove('hidden', 'text-red-500', 'text-green-500');
-            if (amount > 0) {
-                el.classList.add('text-red-500');
-                el.innerText = `▲ ${amount}`;
-            } else {
-                el.classList.add('text-green-500');
-                el.innerText = `▼ ${Math.abs(amount)}`;
-            }
-        }
-
-        function hideLastWin() {
-            document.getElementById('last-win-display').classList.add('hidden');
-        }
-
-        function changeBet(amount) {
-            initAudio(); // 確保使用者互動時啟用音訊引擎
-
-            if (isSpinning || chips < 100) return;
-            const newBet = currentBet + amount;
-            if (newBet >= 100 && newBet <= chips) {
-                currentBet = newBet;
-                updateBetDisplay();
-            }
-        }
-
-        function setBetMax() {
-            initAudio(); // 確保使用者互動時啟用音訊引擎
-
-            if (isSpinning || chips < 100) return;
-            currentBet = Math.floor(chips / 100) * 100;
-            updateBetDisplay();
-        }
-
-        function updateBetDisplay() {
+        function changeBet(amt) {
+            currentBet = Math.max(100, currentBet + amt);
             document.getElementById('current-bet-display').innerText = currentBet;
-            const btn = document.getElementById('spin-btn');
-            btn.querySelector('span:first-child').innerText = '確認啟動';
-            btn.querySelector('#btn-bet-display').innerText = `(-${currentBet}點)`;
         }
 
-        window.onload = () => {
-            initBoard();
-            updateBetDisplay();
-        };
-
+        initBoard();
     </script>
 </body>
 </html>
