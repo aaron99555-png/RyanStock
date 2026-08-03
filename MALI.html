@@ -67,6 +67,7 @@
 
         let chips = 5000, currentBet = 100, isSpinning = false, currentIndex = 0;
         const synth = new Tone.PolySynth().toDestination();
+        const winSynth = new Tone.Synth().toDestination();
         synth.volume.value = 10;
 
         function initBoard() {
@@ -74,7 +75,7 @@
             GAME_ITEMS.forEach((item, i) => {
                 const el = document.createElement('div');
                 el.id = 'item-' + i;
-                el.className = `pos-${i} ${item.color} flex items-center justify-center text-[10px] sm:text-xs font-bold rounded shadow-inner border border-black p-1 text-center`;
+                el.className = `pos-${i} ${item.color} flex items-center justify-center text-[9px] sm:text-xs font-bold rounded shadow-inner border border-black p-1 text-center`;
                 el.innerHTML = item.name;
                 board.appendChild(el);
             });
@@ -86,8 +87,8 @@
             chips -= currentBet;
             document.getElementById('chips-display').innerText = '$' + chips;
             isSpinning = true;
-            let steps = 50 + Math.floor(Math.random() * 24);
-            let speed = 50;
+            let steps = 40 + Math.floor(Math.random() * 24);
+            let speed = 60;
             
             function move() {
                 document.querySelectorAll('.grid-container > div').forEach(el => el.classList.remove('ring-4', 'ring-yellow-300', 'z-10'));
@@ -97,7 +98,7 @@
                 synth.triggerAttackRelease("C4", "32n");
                 currentIndex++;
                 
-                if(--steps > 0) setTimeout(move, speed += 2);
+                if(--steps > 0) setTimeout(move, speed += 3);
                 else {
                     isSpinning = false;
                     checkResult(GAME_ITEMS[(currentIndex - 1) % 24]);
@@ -108,12 +109,12 @@
 
         function checkResult(item) {
             let msg = item.name;
-            if(item.type === 'good') chips += currentBet * 2;
-            else if(item.type === 'bad') chips -= currentBet * 2;
-            else if(item.type === 'super_bad') chips -= currentBet * 10;
-            else if(item.type === 'zhezhe') chips = Math.floor(chips / 2);
-            else if(item.type === 'jackpot') chips += currentBet * 50;
-            else chips += currentBet;
+            if(item.type === 'good') { chips += currentBet * 3; winSynth.triggerAttackRelease(["C5", "E5", "G5"], "4n"); }
+            else if(item.type === 'bad') { chips -= currentBet * 2; winSynth.triggerAttackRelease(["G3", "Eb3"], "4n"); }
+            else if(item.type === 'super_bad') { chips -= 5000; winSynth.triggerAttackRelease(["C2", "G1"], "2n"); }
+            else if(item.type === 'zhezhe') { chips = Math.floor(chips / 2); winSynth.triggerAttackRelease(["C3", "Gb2"], "2n"); }
+            else if(item.type === 'jackpot') { chips += currentBet * 50; winSynth.triggerAttackRelease(["C6", "E6", "G6", "C7"], "1n"); }
+            else { chips += currentBet; winSynth.triggerAttackRelease(["C4"], "8n"); }
             
             document.getElementById('chips-display').innerText = '$' + chips;
             document.getElementById('center-message').innerText = msg;
