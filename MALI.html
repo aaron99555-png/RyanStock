@@ -12,8 +12,9 @@
             grid-template-columns: repeat(7, 1fr);
             grid-template-rows: repeat(7, 1fr);
             gap: 4px;
+            width: 100%;
+            height: 100%;
         }
-        /* 定義每個位置的名稱，確保絕對不會跑版 */
         .pos-0 { grid-area: 1 / 1; } .pos-1 { grid-area: 1 / 2; } .pos-2 { grid-area: 1 / 3; }
         .pos-3 { grid-area: 1 / 4; } .pos-4 { grid-area: 1 / 5; } .pos-5 { grid-area: 1 / 6; }
         .pos-6 { grid-area: 1 / 7; } .pos-7 { grid-area: 2 / 7; } .pos-8 { grid-area: 3 / 7; }
@@ -27,69 +28,95 @@
 <body class="h-[100dvh] w-full bg-gray-900 flex flex-col items-center justify-between p-2 font-sans text-white overflow-hidden m-0">
 
     <div class="flex-shrink-0 w-full text-center pt-2">
-        <h1 class="text-3xl sm:text-5xl font-black text-yellow-400 drop-shadow-[0_0_10px_rgba(255,0,0,0.8)] tracking-widest">飆股小瑪莉</h1>
+        <h1 class="text-3xl font-black text-yellow-400 drop-shadow-[0_0_10px_rgba(255,0,0,0.8)] tracking-widest">飆股小瑪莉</h1>
         <div class="text-lg font-bold text-yellow-200">資本: <span id="chips-display">$5000</span></div>
     </div>
 
     <div class="flex-1 w-full max-w-lg flex items-center justify-center p-2">
-        <div id="game-board" class="grid-container w-full aspect-square bg-gray-800 p-2 rounded-2xl border-4 border-gray-700 shadow-2xl relative">
+        <div id="game-board" class="grid-container bg-gray-800 p-2 rounded-2xl border-4 border-gray-700 shadow-2xl">
             <div class="col-start-2 col-end-7 row-start-2 row-end-7 bg-black flex items-center justify-center rounded-lg border-2 border-gray-600">
-                <h2 id="center-message" class="text-xl font-bold text-center text-white">請下單！</h2>
+                <h2 id="center-message" class="text-lg font-bold text-center text-white px-2">請下單！</h2>
             </div>
         </div>
     </div>
 
-    <div class="flex-shrink-0 w-full pb-4 flex flex-col items-center gap-3">
+    <div class="flex-shrink-0 w-full pb-6 flex flex-col items-center gap-3">
         <div class="flex items-center gap-4 bg-gray-800 p-3 rounded-xl border border-gray-600">
-            <button onclick="changeBet(-100)" class="px-4 py-2 bg-gray-700 rounded">-</button>
-            <div id="current-bet-display" class="w-20 text-center font-black">100</div>
-            <button onclick="changeBet(100)" class="px-4 py-2 bg-gray-700 rounded">+</button>
+            <button onclick="changeBet(-100)" class="px-6 py-2 bg-gray-700 rounded font-bold">-100</button>
+            <div id="current-bet-display" class="w-20 text-center font-black text-xl">100</div>
+            <button onclick="changeBet(100)" class="px-6 py-2 bg-gray-700 rounded font-bold">+100</button>
         </div>
-        <button id="spin-btn" onclick="startSpin()" class="px-10 py-4 bg-red-600 rounded-full font-black text-xl shadow-lg hover:bg-red-500">確認啟動</button>
+        <button id="spin-btn" onclick="startSpin()" class="px-10 py-4 bg-red-600 rounded-full font-black text-xl shadow-[0_5px_0_#991b1b] active:shadow-none active:translate-y-[5px] transition-all">確認啟動</button>
     </div>
 
     <script>
         const GAME_ITEMS = [
-            { id: 0, name: 'TSMC', type: 'stock', color: 'bg-red-600' }, { id: 1, name: '跌停', type: 'bad', color: 'bg-green-600' },
-            { id: 2, name: '鴻海', type: 'stock', color: 'bg-blue-700' }, { id: 3, name: '跳空鎖死', type: 'good', color: 'bg-red-500' },
-            { id: 4, name: '聯發科', type: 'stock', color: 'bg-red-500' }, { id: 5, name: '外資倒貨', type: 'bad', color: 'bg-green-500' },
-            { id: 6, name: '財富對折', type: 'zhezhe', color: 'bg-cyan-600' }, { id: 7, name: '軋空', type: 'good', color: 'bg-pink-600' },
-            { id: 8, name: '南亞科', type: 'stock', color: 'bg-blue-600' }, { id: 9, name: '漲停', type: 'good', color: 'bg-red-600' },
-            { id: 10, name: '胖手指', type: 'bad', color: 'bg-green-800' }, { id: 11, name: '違約交割', type: 'bad', color: 'bg-gray-900' },
-            { id: 12, name: '國巨', type: 'stock', color: 'bg-teal-600' }, { id: 13, name: '投信連買', type: 'good', color: 'bg-pink-400' },
-            { id: 14, name: '無量下跌', type: 'bad', color: 'bg-green-400' }, { id: 15, name: '融資斷頭', type: 'bad', color: 'bg-green-700' },
-            { id: 16, name: '金爺降臨', type: 'jackpot', color: 'bg-yellow-300' }, { id: 17, name: '法會大跌', type: 'bad', color: 'bg-emerald-900' },
-            { id: 18, name: '直雲家族', type: 'super_bad', color: 'bg-purple-900' }, { id: 19, name: '漲停', type: 'good', color: 'bg-red-600' },
-            { id: 20, name: '尖點', type: 'stock', color: 'bg-indigo-500' }, { id: 21, name: '量價背離', type: 'bad', color: 'bg-green-700' },
-            { id: 22, name: '高檔倒貨', type: 'bad', color: 'bg-green-600' }, { id: 23, name: '跌停', type: 'bad', color: 'bg-green-600' }
+            { name: 'TSMC', type: 'stock', color: 'bg-red-600' }, { name: '跌停', type: 'bad', color: 'bg-green-600' },
+            { name: '鴻海', type: 'stock', color: 'bg-blue-700' }, { name: '跳空鎖死', type: 'good', color: 'bg-red-500' },
+            { name: '聯發科', type: 'stock', color: 'bg-red-500' }, { name: '外資倒貨', type: 'bad', color: 'bg-green-500' },
+            { name: '財富對哲', type: 'zhezhe', color: 'bg-cyan-600' }, { name: '軋空', type: 'good', color: 'bg-pink-600' },
+            { name: '南亞科', type: 'stock', color: 'bg-blue-600' }, { name: '漲停', type: 'good', color: 'bg-red-600' },
+            { name: '胖手指', type: 'bad', color: 'bg-green-800' }, { name: '違約交割', type: 'bad', color: 'bg-gray-900' },
+            { name: '國巨', type: 'stock', color: 'bg-teal-600' }, { name: '投信連買', type: 'good', color: 'bg-pink-400' },
+            { name: '無量下跌', type: 'bad', color: 'bg-green-400' }, { name: '融資斷頭', type: 'bad', color: 'bg-green-700' },
+            { name: '金爺降臨', type: 'jackpot', color: 'bg-yellow-300' }, { name: '法會大跌', type: 'bad', color: 'bg-emerald-900' },
+            { name: '直雲家族', type: 'super_bad', color: 'bg-purple-900' }, { name: '漲停', type: 'good', color: 'bg-red-600' },
+            { name: '尖點', type: 'stock', color: 'bg-indigo-500' }, { name: '量價背離', type: 'bad', color: 'bg-green-700' },
+            { name: '高檔倒貨', type: 'bad', color: 'bg-green-600' }, { name: '跌停', type: 'bad', color: 'bg-green-600' }
         ];
 
         let chips = 5000, currentBet = 100, isSpinning = false, currentIndex = 0;
+        const synth = new Tone.PolySynth().toDestination();
+        synth.volume.value = 10;
 
         function initBoard() {
             const board = document.getElementById('game-board');
             GAME_ITEMS.forEach((item, i) => {
                 const el = document.createElement('div');
                 el.id = 'item-' + i;
-                el.className = `pos-${i} ${item.color} flex items-center justify-center text-xs font-bold rounded shadow-inner border border-black`;
+                el.className = `pos-${i} ${item.color} flex items-center justify-center text-[10px] sm:text-xs font-bold rounded shadow-inner border border-black p-1 text-center`;
                 el.innerHTML = item.name;
                 board.appendChild(el);
             });
         }
 
-        function startSpin() {
-            if(isSpinning) return;
+        async function startSpin() {
+            if(isSpinning || chips < currentBet) return;
+            await Tone.start();
+            chips -= currentBet;
+            document.getElementById('chips-display').innerText = '$' + chips;
             isSpinning = true;
             let steps = 50 + Math.floor(Math.random() * 24);
             let speed = 50;
+            
             function move() {
-                document.querySelectorAll('.grid-container > div').forEach(el => el.classList.remove('ring-4', 'ring-yellow-300'));
-                document.getElementById('item-' + (currentIndex % 24)).classList.add('ring-4', 'ring-yellow-300');
+                document.querySelectorAll('.grid-container > div').forEach(el => el.classList.remove('ring-4', 'ring-yellow-300', 'z-10'));
+                let currentEl = document.getElementById('item-' + (currentIndex % 24));
+                currentEl.classList.add('ring-4', 'ring-yellow-300', 'z-10');
+                
+                synth.triggerAttackRelease("C4", "32n");
                 currentIndex++;
+                
                 if(--steps > 0) setTimeout(move, speed += 2);
-                else isSpinning = false;
+                else {
+                    isSpinning = false;
+                    checkResult(GAME_ITEMS[(currentIndex - 1) % 24]);
+                }
             }
             move();
+        }
+
+        function checkResult(item) {
+            let msg = item.name;
+            if(item.type === 'good') chips += currentBet * 2;
+            else if(item.type === 'bad') chips -= currentBet * 2;
+            else if(item.type === 'super_bad') chips -= currentBet * 10;
+            else if(item.type === 'zhezhe') chips = Math.floor(chips / 2);
+            else if(item.type === 'jackpot') chips += currentBet * 50;
+            else chips += currentBet;
+            
+            document.getElementById('chips-display').innerText = '$' + chips;
+            document.getElementById('center-message').innerText = msg;
         }
 
         function changeBet(amt) {
