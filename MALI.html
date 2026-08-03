@@ -111,7 +111,7 @@
             { id: 'item-3', name: '跳空鎖死', type: 'event', color: 'bg-yellow-400', text: 'text-red-900' }, // 上4
             { id: 'item-4', name: '聯發科', type: 'stock', color: 'bg-red-500', text: 'text-white' }, // 上5
             { id: 'item-5', name: '外資倒貨', type: 'bad', color: 'bg-green-500', text: 'text-black' }, // 上6
-            { id: 'item-6', name: '聯電', type: 'stock', color: 'bg-orange-500', text: 'text-white' }, // 上7
+            { id: 'item-6', name: '相信哲哲財富對折', type: 'zhezhe', color: 'bg-cyan-600', text: 'text-white' }, // 上7 (原為長榮)
             
             { id: 'item-7', name: '軋空行情', type: 'good', color: 'bg-pink-600', text: 'text-white' }, // 右1
             { id: 'item-8', name: '南亞科', type: 'stock', color: 'bg-blue-600', text: 'text-white' }, // 右2
@@ -165,6 +165,8 @@
                 let formattedName = item.name;
                 if (item.name === '加入直雲大家族') {
                      formattedName = '直雲<br>大家族';
+                } else if (item.name === '相信哲哲財富對折') {
+                     formattedName = '財富<br>對折';
                 } else if (item.name.length >= 4) {
                      formattedName = item.name.substring(0,2) + '<br>' + item.name.substring(2);
                 }
@@ -248,6 +250,13 @@
             const multiplier = currentBet / 100;
             
             switch (item.type) {
+                case 'zhezhe':
+                    // 扣除目前剩餘籌碼的一半 (因為已經先扣了下注額，所以是從扣除下注額後的餘額來對折)
+                    // 使用 Math.ceil 確保如果剩單數，扣除的數字是整數
+                    winAmount = -Math.ceil(chips / 2);
+                    message = `😎 相信哲哲！\n【財富對折】\n慘賠 ${Math.abs(winAmount)}`;
+                    msgEl.className = 'responsive-text-md font-black text-center z-10 transition-colors duration-300 text-cyan-400 drop-shadow-md';
+                    break;
                 case 'jackpot':
                     winAmount = 5000 * multiplier;
                     message = `🎊 狂賀！\n【${item.name}】\n大賺 ${winAmount}`;
