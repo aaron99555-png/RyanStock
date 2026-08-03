@@ -108,7 +108,7 @@
             { id: 'item-0', name: 'TSMC', type: 'stock', color: 'bg-red-600', text: 'text-white' }, // 上1
             { id: 'item-1', name: '跌停', type: 'bad', color: 'bg-green-600', text: 'text-white' }, // 上2
             { id: 'item-2', name: '鴻海', type: 'stock', color: 'bg-blue-700', text: 'text-white' }, // 上3
-            { id: 'item-3', name: '跳空鎖死', type: 'event', color: 'bg-yellow-400', text: 'text-red-900' }, // 上4
+            { id: 'item-3', name: '跳空鎖死', type: 'good', color: 'bg-red-500', text: 'text-yellow-300' }, // 上4 (改為賺錢)
             { id: 'item-4', name: '聯發科', type: 'stock', color: 'bg-red-500', text: 'text-white' }, // 上5
             { id: 'item-5', name: '外資倒貨', type: 'bad', color: 'bg-green-500', text: 'text-black' }, // 上6
             { id: 'item-6', name: '相信哲哲財富對折', type: 'zhezhe', color: 'bg-cyan-600', text: 'text-white' }, // 上7 (原為長榮)
@@ -129,20 +129,12 @@
             
             { id: 'item-19', name: '漲停', type: 'good', color: 'bg-red-600', text: 'text-yellow-300' }, // 左1 (左下往上)
             { id: 'item-20', name: '尖點', type: 'stock', color: 'bg-indigo-500', text: 'text-white' }, // 左2
-            { id: 'item-21', name: '量價背離', type: 'event', color: 'bg-gray-700', text: 'text-yellow-300' }, // 左3
+            { id: 'item-21', name: '量價背離', type: 'bad', color: 'bg-green-700', text: 'text-yellow-300' }, // 左3 (改為賠錢)
             { id: 'item-22', name: '高檔倒貨', type: 'bad', color: 'bg-green-600', text: 'text-yellow-200' }, // 左4
             { id: 'item-23', name: '跌停', type: 'bad', color: 'bg-green-600', text: 'text-white' }  // 左5
         ];
 
-        // 7x7 網格中的座標定位
-        const gridPositions = [
-            'col-start-1 row-start-1', 'col-start-2 row-start-1', 'col-start-3 row-start-1', 'col-start-4 row-start-1', 'col-start-5 row-start-1', 'col-start-6 row-start-1', 'col-start-7 row-start-1', // 上排
-            'col-start-7 row-start-2', 'col-start-7 row-start-3', 'col-start-7 row-start-4', 'col-start-7 row-start-5', 'col-start-7 row-start-6', // 右側
-            'col-start-7 row-start-7', 'col-start-6 row-start-7', 'col-start-5 row-start-7', 'col-start-4 row-start-7', 'col-start-3 row-start-7', 'col-start-2 row-start-7', 'col-start-1 row-start-7', // 下排
-            'col-start-1 row-start-6', 'col-start-1 row-start-5', 'col-start-1 row-start-4', 'col-start-1 row-start-3', 'col-start-1 row-start-2'  // 左側
-        ];
-
-        let chips = 1000;
+        let chips = 5000;
         let currentBet = 100;
         let isSpinning = false;
         let currentIndex = -1;
